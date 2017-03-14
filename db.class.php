@@ -17,25 +17,27 @@
 //	2. 	$db->where("id=3")->update("name=zhangsan,age=12")
 //select
 //	1. 	$db->filed("name")->where("id=3")->order("id ASC")->limit("0,2")->select();
-//	2.	$db->where("id=3")->order("id ASC")->limit("0,2")->select("name");
-//		要查询的字段可直接写在select中
+//	2.	select传参：
+//			完整语句
+//			字段值：name，id...
+//			条件：id=3
+
 
 class db{
-	public $hostname="localhost";
-	public $dbname="1603";
-	public $tablename="user";
-	private $username="root";
-	private $password="";
+	public $hostname="localhost";//连接地址
+	public $dbname="blog1";//数据库名
+	public $tablename="user";//表名
+	private $username="root";//用户名
+	private $password="";//密码
 	public $connect;
 	public $opts;
-	
 	/* 晚绑定	弱类型	 严谨*/
 	function __construct($tablename=""){
         $this->tablename=empty($tablename)?"demo":$tablename;
         $this->config();
     }
     
-    public function config(){
+    public function config(){//连接数据库
         $this->connect=new mysqli($this->hostname,$this->username,$this->password,$this->dbname);//连接数据库
         if(mysqli_connect_errno($this->connect)){
             echo "连接数据库失败";
@@ -49,16 +51,19 @@ class db{
     }
 //  查
 	public function select($sql=""){
-		if(empty($sql)){
+		if(empty($sql)){//select不传参
         	$sql=empty($sql)?"select ".$this->opts["filed"]." from ".$this->tablename." ".$this->opts["where"]." ".$this->opts["order"]." ".$this->opts["limit"]:$sql;
 	    }else{
-	    	if(strpos($sql,"elect")){
+	    	if(strpos($sql,"elect")){//select传完整语句
 				$sql=$sql;
-			}else{
+			}else if(strpos($sql,"=")){//select传条件
+				$this->where($sql);
+				$sql="select ".$this->opts["filed"]." from ".$this->tablename." ".$this->opts["where"]." ".$this->opts["order"]." ".$this->opts["limit"];
+			}else{//select传字段或者不传参
 				$this->filed($sql);
 				$sql="select ".$this->opts["filed"]." from ".$this->tablename." ".$this->opts["where"]." ".$this->opts["order"]." ".$this->opts["limit"];
 			};
-	    };
+	   };
         $result=$this->connect->query($sql);
         $arr=array();
         while($row=$result->fetch_assoc()){
@@ -69,9 +74,10 @@ class db{
     // 增
     public function insert($sql=""){
 		if(empty($sql)){
-			$sql=empty($sql)?"insert into ".$this->tablename." ".$this->opts["filed"]:$sql;
+			$this->opts["filed"]="(".$this->opts["keys"].") values (".$this->opts["values"].")";
+			$sql=empty($sql)?"insert into ".$this->tablename." ".$this->opts['filed']:$sql;
 		}else{
-			if(strpos($sql,"neset")){
+			if(strpos($sql,"nsert")){
 				$sql=$sql;
 			}else{
 				$this->filed($sql);
@@ -126,10 +132,12 @@ class db{
             };
             $sql=str_replace(";",",",$sql);
 			$this->opts["keys"]=substr($keys,0,-1);
+			$this->opts["values"]=substr($values,0,-1);
         }else if(strpos($sql,"=")){
             $arr2=explode("=",$sql);
 			$this->opts["keys"]=$arr2[0];
 			$this->opts["values"]=$arr2[1];
+			
         };
         $this->opts["filed"]=$sql;
         return $this;
@@ -154,11 +162,11 @@ class db{
     }
 }
 
-
-
-
 //实例化
 //	$db=new db("user");
-//	var_dump($db->delete("username='2233'"));
+//	var_dump($db->select("select * from user where uname='zzzzz'"));
+//	var_dump($db->select("uname='zzzzz'"));
+//	var_dump($db->where("uid=3")->update("uname='zhangsanasd'"));
+	
 
 ?>
